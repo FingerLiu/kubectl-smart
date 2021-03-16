@@ -8,11 +8,13 @@ using curl:
 curl -LO https://github.com/FingerLiu/kubectl-smart/raw/master/kubectl-smart
 chmod +x ./kubectl-smart
 sudo mv ./kubectl-smart /usr/local/bin/kubectl-s
+kubectl s -h
 ```
 
 using krew:
 ```bash
 TODO
+kubectl smart -h
 ```
 
 # Usage
@@ -39,6 +41,7 @@ OPTIONS:
   -c                        : TODO container name.
   -e                        : use exact match rather than grep. Only use this when you want to disable grep when grep return multi items.
 Examples:
+  # if you installed through krew, you should **kubectl smart** to replace **kubectl s**
   # get pod with name contains my in namespace her-namespace
   # (kubectl get pod -n her-namespace-a |grep my)
   kubectl s gp -n her.*a my
