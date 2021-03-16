@@ -25,6 +25,8 @@ OPTIONS:
   -i                        : --stdin=true: Pass stdin to the container
   -c                        : TODO container name.
   -e                        : use exact match rather than grep. Only use this when you want to disable grep when grep return multi items.
+
+IMPORTANT: if you installed through krew, you should **kubectl smart** to replace **kubectl s**
 Examples:
   # get pod with name contains my in namespace her-namespace
   # (kubectl get pod -n her-namespace-a |grep my)
