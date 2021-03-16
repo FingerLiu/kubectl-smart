@@ -16,6 +16,7 @@ SUB_COMMAND:
   g                         : shortcut for get
   h,help                    : show this message
 OPTIONS:
+  -A                        : all-namespaces
   -n                        : namespace
   -w,--wide                 : TODO get with wide output
   -f,--follow               : follow log output
@@ -52,6 +53,7 @@ command="gp"
 # options
 option_nodefaultns=0
 option_wide=0
+option_allns=0
 option_follow=0
 option_tail=1
 # rewrite k8s default tty
@@ -109,6 +111,10 @@ while [ $# -gt 0 ]; do
     command="edit"
     resource_type=$2
     shift
+    shift
+    ;;
+  -A | --all-namespaces)
+    option_allns=1
     shift
     ;;
   -n | --namespace)
@@ -206,14 +212,21 @@ get_ns(){
     fi
 }
 
-[ "$option_nodefaultns" = 1 ] && get_ns && kubectl="$kubectl --namespace=$ns_name"
+ALL_NS_FLAG=""
+
+if [ $option_allns = 1 ]; then
+    ALL_NS_FLAG=" --all-namespaces"
+else
+    [ "$option_nodefaultns" = 1 ] && get_ns && kubectl="$kubectl --namespace=$ns_name"
+fi
+
 
 get_resource_names(){
     kubectl_get="$kubectl get $resource_type"
     if [ $no_grep = 0 ]; then
-        [ -z $name_pattern ] || resource_name=$($kubectl_get --no-headers -ocustom-columns='n:metadata.name'|grep $name_pattern)
+        [ -z $name_pattern ] || resource_name=$($kubectl_get --no-headers -ocustom-columns='n:metadata.name' $ALL_NS_FLAG|grep $name_pattern)
     else
-        [ -z $name_pattern ] || resource_name=$($kubectl_get --no-headers -ocustom-columns='n:metadata.name'|grep ^$name_pattern$)
+        [ -z $name_pattern ] || resource_name=$($kubectl_get --no-headers -ocustom-columns='n:metadata.name' $ALL_NS_FLAG|grep ^$name_pattern$)
     fi
 }
 
@@ -225,7 +238,7 @@ ensure_name_single_match(){
 
 get_resource(){
     get_resource_names
-    $kubectl_get $resource_name
+    $kubectl_get $resource_name $ALL_NS_FLAG
 }
 ##################################################################
 
@@ -241,7 +254,6 @@ case $command in
 
     exec)
         ensure_name_single_match
-        echo "$kubectl exec -ti $resource_name $exec_command"
         $kubectl exec -ti $resource_name $exec_command
         ;;
 
