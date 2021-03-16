@@ -1,0 +1,262 @@
+#!/usr/bin/env sh
+set -e
+
+usage() {
+  cat <<"EOF"
+Make kubectl smart with name search.Type less letters!Save more life!
+USAGE:
+  smart sub_command [options...] [name_pattern...]
+SUB_COMMAND:
+  gp                        : shortcut for get pod
+  l,logs                    : shortcut for logs
+  e,exec                    : shortcut for exec
+  edp                       : shortcut for edit pod
+  ed,edit                   : shortcut for edit
+  dp                        : shortcut for delete pod
+  g                         : shortcut for get
+  h,help                    : show this message
+OPTIONS:
+  -n                        : namespace
+  -w,--wide                 : TODO get with wide output
+  -f,--follow               : follow log output
+  --tail                    : tail logs
+  -t                        : --tty=true: Stdin is a TTY
+  -i                        : --stdin=true: Pass stdin to the container
+  -c                        : TODO container name.
+  -e                        : use exact match rather than grep. Only use this when you want to disable grep when grep return multi items.
+Examples:
+  # get pod with name contains my in namespace her-namespace
+  # (kubectl get pod -n her-namespace-a |grep my)
+  kubectl s gp -n her.*a my
+
+  # get log for pod with name my
+  # (kubectl logs --tail 100 -f $(kubectl get pods | awk '/my/ {print $1;exit}'))
+  kubectl s l my 
+
+  # exec into pod
+  # kubectl exec -ti my-pod-i3jx bash
+  kubectl s e my bash
+
+  # get deploy with name contains my
+  # (kubectl get deploy | grep my)
+  kubectl s g deploy my
+EOF
+}
+
+kubectl=kubectl
+node=""
+
+# sub commands
+command="gp"
+
+# options
+option_nodefaultns=0
+option_wide=0
+option_follow=0
+option_tail=1
+# rewrite k8s default tty
+option_tty=1
+# rewrite k8s default stdin
+option_stdin=1
+option_container=0
+no_grep=0
+
+# other args
+ns_pattern="default"
+tail_lines=100
+name_pattern=""
+resource_type="pod"
+resource_name=""
+container_name=""
+exec_command=""
+
+while [ $# -gt 0 ]; do
+  key="$1"
+
+  case $key in
+
+  --help | -h)
+    usage
+    exit 0
+    ;;
+  gp)
+    command="get_pod"
+    shift
+    ;;
+  logs | l)
+    command="logs"
+    shift
+    ;;
+  exec | e)
+    command="exec"
+    shift
+    ;;
+  dp)
+    command="delete_pod"
+    shift
+    ;;
+  edp)
+    command="edit"
+    shift
+    ;;
+  g)
+    command="get_resource"
+    resource_type=$2
+    shift
+    shift
+    ;;
+  edit | ed)
+    command="edit"
+    resource_type=$2
+    shift
+    shift
+    ;;
+  -n | --namespace)
+    option_nodefaultns=1
+    ns_pattern=$2
+    shift
+    shift
+    ;;
+  -n=* | --namespace=*)
+    option_nodefaultns=1
+    ns_pattern=${key##*=}
+    shift
+    ;;
+  -n*)
+    option_nodefaultns=1
+    ns_pattern=${key:2}
+    shift
+    ;;
+  -w | --wide)
+    option_wide=1
+    shift
+    ;;
+  -f | --follow)
+    option_follow=1
+    shift
+    ;;
+  --tail=*)
+    option_tail=1
+    tail_lines=${key##*=}
+    shift
+    ;;
+  --tail)
+    option_tail=1
+    tail_lines=$2
+    shift
+    shift
+    ;;
+  -c)
+    option_container=1
+    container_name=$2
+    shift
+    shift
+    ;;
+  -c=*)
+    option_container=1
+    container_name=${key##*=}
+    shift
+    ;;
+  -c*)
+    option_container=1
+    container_name=${key:2}
+    shift
+    ;;
+  -e)
+    no_grep=1
+    shift
+    ;;
+
+  *)
+    if [ -z "$name_pattern" ]; then
+      name_pattern="$1"
+      shift
+    else
+      echo "resource name already assigned: $name_pattern"
+      exec_command=$(echo "$exec_command $1")
+      shift
+    fi
+    ;;
+  esac
+done
+
+# echo "command is $command, resource_type is $resource_type, name_pattern is $name_pattern, namespace_pattern is $ns_pattern,  container_name is $container_name."
+echo ""
+
+#####################kubectl functions############################
+get_ns(){
+    if [ $no_grep = 0 ]; then
+        ns_name=$($kubectl get ns --no-headers -ocustom-columns='n:metadata.name' |grep $ns_pattern)
+        ns_matched=$(echo $ns_name|wc -w)
+    else
+        ns_name=$($kubectl get ns --no-headers -ocustom-columns='n:metadata.name' |grep ^$ns_pattern$)
+        ns_matched=$(echo $ns_name|wc -w)
+    fi
+
+    if [ $ns_matched = 0 ]; then
+        echo "No namespace match $ns_pattern found."
+        exit 1
+    elif [ $ns_matched != 1 ]; then
+        echo "Multi namespaces match $ns_pattern found(you can use -e to disable grep): "
+        echo "$ns_name."
+        exit 1
+    else
+        ns_name=$($kubectl get ns --no-headers -ocustom-columns='n:metadata.name'|grep $ns_pattern)
+        echo "using namespace $ns_name"
+    fi
+}
+
+[ "$option_nodefaultns" = 1 ] && get_ns && kubectl="$kubectl --namespace=$ns_name"
+
+get_resource_names(){
+    kubectl_get="$kubectl get $resource_type"
+    if [ $no_grep = 0 ]; then
+        [ -z $name_pattern ] || resource_name=$($kubectl_get --no-headers -ocustom-columns='n:metadata.name'|grep $name_pattern)
+    else
+        [ -z $name_pattern ] || resource_name=$($kubectl_get --no-headers -ocustom-columns='n:metadata.name'|grep ^$name_pattern$)
+    fi
+}
+
+ensure_name_single_match(){
+    get_resource_names
+    echo "found matched resource: "$resource_name
+    [ $(echo $resource_name | wc -w) = "1" ] || (echo "mutli match found or no match found: $resource_name" && exit 1)
+}
+
+get_resource(){
+    get_resource_names
+    $kubectl_get $resource_name
+}
+##################################################################
+
+case $command in
+    get_pod)
+        get_resource
+        ;;
+
+    logs)
+        ensure_name_single_match
+        $kubectl logs -f --tail 100 $resource_name
+        ;;
+
+    exec)
+        ensure_name_single_match
+        echo "$kubectl exec -ti $resource_name $exec_command"
+        $kubectl exec -ti $resource_name $exec_command
+        ;;
+
+    delete_pod)
+        ensure_name_single_match
+        $kubectl delete $resource_type $resource_name
+        ;;
+
+    edit)
+        ensure_name_single_match
+        $kubectl edit $resource_type $resource_name
+        ;;
+
+    get_resource)
+        get_resource
+        ;;
+esac
+exit 0
