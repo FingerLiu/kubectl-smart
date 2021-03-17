@@ -7,8 +7,8 @@ using curl:
 ```bash
 curl -LO https://github.com/FingerLiu/kubectl-smart/raw/master/kubectl-smart
 chmod +x ./kubectl-smart
-sudo mv ./kubectl-smart /usr/local/bin/kubectl-s
-kubectl s -h
+sudo mv ./kubectl-smart /usr/local/bin/kubectl-smart
+kubectl smart -h
 ```
 
 using krew:
@@ -44,17 +44,17 @@ Examples:
   # if you installed through krew, you should **kubectl smart** to replace **kubectl s**
   # get pod with name contains my in namespace her-namespace
   # (kubectl get pod -n her-namespace-a |grep my)
-  kubectl s gp -n her.*a my
+  kubectl smart gp -n her.*a my
 
   # get log for pod with name my
   # (kubectl logs --tail 100 -f $(kubectl get pods | awk '/my/ {print $1;exit}'))
-  kubectl s l my
+  kubectl smart l my
 
   # exec into pod
   # kubectl exec -ti my-pod-i3jx bash
-  kubectl s e my bash
+  kubectl smart e my bash
 
   # get deploy with name contains my
   # (kubectl get deploy | grep my)
-  kubectl s g deploy my
+  kubectl smart g deploy my
 ```
