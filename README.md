@@ -38,6 +38,7 @@ OPTIONS:
   --tail                    : tail logs
   -t                        : --tty=true: Stdin is a TTY
   -i                        : --stdin=true: Pass stdin to the container
+  -s                        : sort by create datetime
   -c                        : TODO container name.
   -e                        : use exact match rather than grep. Only use this when you want to disable grep when grep return multi items.
 Examples:
