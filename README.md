@@ -58,4 +58,12 @@ Examples:
   # get deploy with name contains my
   # (kubectl get deploy | grep my)
   kubectl smart g deploy my
+  
+  # get pod with ascending sort 
+  # --sort-by=.metadata.creationTimestamp
+  k2 gp my -s
+
+  # get pod with descending sort 
+  # --sort-by=.metadata.creationTimestamp
+  k2 gp my -s | tac
 ```
