@@ -5,10 +5,10 @@ A kubectl plugin that makes kubectl smart with name search.Type less letters!Sav
 # Installation
 using curl:
 ```bash
-curl -LO https://github.com/FingerLiu/kubectl-smart/raw/master/kubectl-smart
+curl -LO https://github.com/FingerLiu/kubectl-smart/raw/main/kubectl-smart
 chmod +x ./kubectl-smart
-sudo mv ./kubectl-smart /usr/local/bin/kubectl-s
-kubectl s -h
+sudo mv ./kubectl-smart /usr/local/bin/kubectl-smart
+kubectl smart -h
 ```
 
 using krew:
@@ -38,23 +38,34 @@ OPTIONS:
   --tail                    : tail logs
   -t                        : --tty=true: Stdin is a TTY
   -i                        : --stdin=true: Pass stdin to the container
+  -s                        : sort by create datetime
   -c                        : TODO container name.
   -e                        : use exact match rather than grep. Only use this when you want to disable grep when grep return multi items.
 Examples:
   # if you installed through krew, you should **kubectl smart** to replace **kubectl s**
   # get pod with name contains my in namespace her-namespace
   # (kubectl get pod -n her-namespace-a |grep my)
-  kubectl s gp -n her.*a my
+  kubectl smart gp -n her.*a my
 
   # get log for pod with name my
   # (kubectl logs --tail 100 -f $(kubectl get pods | awk '/my/ {print $1;exit}'))
-  kubectl s l my
+  kubectl smart l my
 
   # exec into pod
   # kubectl exec -ti my-pod-i3jx bash
-  kubectl s e my bash
+  kubectl smart e my bash
 
   # get deploy with name contains my
   # (kubectl get deploy | grep my)
-  kubectl s g deploy my
+  kubectl smart g deploy my
+  
+  alias k=`kubectl smart`
+  
+  # get pod with ascending sort 
+  # --sort-by=.metadata.creationTimestamp
+  k gp my -s
+
+  # get pod with descending sort 
+  # --sort-by=.metadata.creationTimestamp
+  k gp my -s | tac
 ```

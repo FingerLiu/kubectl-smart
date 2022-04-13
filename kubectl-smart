@@ -23,6 +23,7 @@ OPTIONS:
   --tail                    : tail logs
   -t                        : --tty=true: Stdin is a TTY
   -i                        : --stdin=true: Pass stdin to the container
+  -s                        : sort by create datetime
   -c                        : TODO container name.
   -e                        : use exact match rather than grep. Only use this when you want to disable grep when grep return multi items.
 
@@ -30,19 +31,19 @@ IMPORTANT: if you installed through krew, you should **kubectl smart** to replac
 Examples:
   # get pod with name contains my in namespace her-namespace
   # (kubectl get pod -n her-namespace-a |grep my)
-  kubectl s gp -n her.*a my
+  kubectl smart gp -n her.*a my
 
   # get log for pod with name my
   # (kubectl logs --tail 100 -f $(kubectl get pods | awk '/my/ {print $1;exit}'))
-  kubectl s l my 
+  kubectl smart l my 
 
   # exec into pod
   # kubectl exec -ti my-pod-i3jx bash
-  kubectl s e my bash
+  kubectl smart e my bash
 
   # get deploy with name contains my
   # (kubectl get deploy | grep my)
-  kubectl s g deploy my
+  kubectl smart g deploy my
 EOF
 }
 
@@ -64,6 +65,7 @@ option_tty=1
 option_stdin=1
 option_container=0
 no_grep=0
+sorted=0
 
 # other args
 ns_pattern="default"
@@ -174,7 +176,10 @@ while [ $# -gt 0 ]; do
     no_grep=1
     shift
     ;;
-
+  -s)
+    sorted=1
+    shift
+    ;;
   *)
     if [ -z "$name_pattern" ]; then
       name_pattern="$1"
@@ -222,6 +227,7 @@ else
     [ "$option_nodefaultns" = 1 ] && get_ns && kubectl="$kubectl --namespace=$ns_name"
 fi
 
+[ "$sorted" = 1 ] && sort_option=" --sort-by=.metadata.creationTimestamp "
 
 get_resource_names(){
     kubectl_get="$kubectl get $resource_type"
@@ -240,7 +246,7 @@ ensure_name_single_match(){
 
 get_resource(){
     get_resource_names
-    $kubectl_get $resource_name $ALL_NS_FLAG
+    $kubectl_get $resource_name $sort_option $ALL_NS_FLAG
 }
 ##################################################################
 
