@@ -5,7 +5,7 @@ A kubectl plugin that makes kubectl smart with name search.Type less letters!Sav
 # Installation
 using curl:
 ```bash
-curl -LO https://github.com/FingerLiu/kubectl-smart/raw/master/kubectl-smart
+curl -LO https://github.com/FingerLiu/kubectl-smart/raw/main/kubectl-smart
 chmod +x ./kubectl-smart
 sudo mv ./kubectl-smart /usr/local/bin/kubectl-smart
 kubectl smart -h
