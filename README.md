@@ -59,11 +59,13 @@ Examples:
   # (kubectl get deploy | grep my)
   kubectl smart g deploy my
   
+  alias k=`kubectl smart`
+  
   # get pod with ascending sort 
   # --sort-by=.metadata.creationTimestamp
-  k2 gp my -s
+  k gp my -s
 
   # get pod with descending sort 
   # --sort-by=.metadata.creationTimestamp
-  k2 gp my -s | tac
+  k gp my -s | tac
 ```
